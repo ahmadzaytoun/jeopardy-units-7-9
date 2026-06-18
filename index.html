@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Language Hub Jeopardy &mdash; Units 7-9</title>
+<style>
+:root{
+  --bg:#0a0f2c; --panel:#10184a; --tile:#0b1ea0; --tile-hi:#1631d6;
+  --gold:#ffcc00; --ink:#ffffff; --muted:#9fb0ff; --done:#1a2150;
+  --good:#15c26b; --bad:#ff5d6c; --line:#2a3a8f;
+  --accent-ink:#10184a; --cat:#ffcc00;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:"Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--ink);
+  min-height:100vh;
+}
+header{padding:14px 20px 6px;text-align:center}
+h1{margin:0;font-size:26px;letter-spacing:.5px}
+h1 .sub{display:block;font-size:13px;color:var(--muted);font-weight:400;margin-top:3px;letter-spacing:2px;text-transform:uppercase}
+.wrap{max-width:1200px;margin:0 auto;padding:0 16px 60px}
+
+/* scoreboard */
+.scoreboard{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:12px 0}
+.team{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 10px;min-width:140px;text-align:center}
+.team input.name{background:transparent;border:none;color:var(--cat);font-weight:700;font-size:15px;text-align:center;width:100%;outline:none}
+.team .score{font-size:30px;font-weight:800;margin:2px 0}
+.team.lead{box-shadow:0 0 0 2px var(--gold) inset}
+.team .pm{display:flex;gap:6px;justify-content:center}
+.btn{background:var(--tile);color:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:14px;cursor:pointer;font-weight:600}
+.btn:hover{background:var(--tile-hi)}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn.small{padding:3px 8px;font-size:13px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:6px 0 16px}
+
+/* tabs */
+.tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:8px 0 18px}
+.tab{background:var(--panel);border:1px solid var(--line);color:var(--ink);padding:10px 16px;border-radius:999px;cursor:pointer;font-weight:700;font-size:15px}
+.tab.active{background:var(--gold);color:var(--accent-ink);border-color:var(--gold)}
+
+/* theme picker */
+.themebar{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;align-items:center;margin:0 0 10px}
+.themebar .lbl{color:var(--muted);font-size:13px;margin-right:2px;text-transform:uppercase;letter-spacing:1px}
+.swatch{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);cursor:pointer;position:relative;padding:0;transition:transform .08s}
+.swatch:hover{transform:scale(1.12)}
+.swatch.active{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold)}
+.swatch i{position:absolute;width:11px;height:11px;border-radius:50%;right:3px;bottom:3px;display:block;border:1px solid rgba(0,0,0,.25)}
+.swatch.custom{display:flex;align-items:center;justify-content:center;font-size:15px;background:var(--panel);color:var(--ink)}
+.custombox{display:none;gap:14px;align-items:center;justify-content:center;flex-wrap:wrap;margin:0 0 14px}
+.custombox.show{display:flex}
+.custombox label{color:var(--muted);font-size:13px;display:flex;gap:6px;align-items:center}
+.custombox input[type=color]{width:36px;height:30px;border:1px solid var(--line);border-radius:6px;background:none;cursor:pointer;padding:0}
+
+/* board */
+.board{display:grid;gap:8px}
+.cell{border-radius:10px;display:flex;align-items:center;justify-content:center;text-align:center}
+.head{background:var(--panel);border:1px solid var(--line);color:var(--cat);font-weight:800;
+  padding:10px 6px;font-size:14px;text-transform:uppercase;letter-spacing:.4px;min-height:64px}
+.tile{background:var(--tile);border:1px solid var(--line);color:var(--gold);font-size:30px;font-weight:800;
+  padding:18px 6px;cursor:pointer;min-height:84px;transition:transform .06s,background .15s}
+.tile:hover{background:var(--tile-hi);transform:scale(1.03)}
+.tile.done{background:var(--done);color:#3b478f;cursor:default;font-size:24px}
+.tile.done:hover{transform:none;background:var(--done)}
+
+/* modal */
+.overlay{position:fixed;inset:0;background:rgba(3,6,24,.92);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
+.overlay.show{display:flex}
+.modal{background:linear-gradient(160deg,var(--panel),var(--bg));border:2px solid var(--gold);border-radius:16px;color:var(--ink);
+  max-width:920px;width:100%;padding:28px 30px 24px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.modal .tag{display:inline-block;background:rgba(127,127,127,.16);color:var(--gold);border:1px solid var(--gold);
+  border-radius:999px;padding:3px 12px;font-size:13px;font-weight:700;margin-bottom:14px}
+.modal .pts{float:right;color:var(--gold);font-weight:800;font-size:26px}
+.modal .q{font-size:30px;line-height:1.35;font-weight:600;margin:6px 0 18px}
+.modal .ans{display:none;background:#fff7d6;color:#10184a;border-radius:12px;padding:16px 18px;font-size:24px;font-weight:800;margin:6px 0 16px}
+.modal .ans.show{display:block;animation:pop .18s ease}
+@keyframes pop{from{transform:scale(.96);opacity:.3}to{transform:scale(1);opacity:1}}
+.modal .ans small{display:block;font-weight:600;font-size:15px;color:#3a4a9f;margin-top:4px}
+.awards{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.awards .btn{font-size:15px;padding:9px 14px}
+.awards .btn.good{background:var(--good);border-color:var(--good)}
+.awards .btn.none{background:transparent;color:var(--ink)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.reveal{background:var(--gold);color:var(--accent-ink);border:none;border-radius:10px;padding:12px 20px;font-size:17px;font-weight:800;cursor:pointer}
+.hint{color:var(--muted);font-size:13px;margin-top:14px;text-align:center}
+.foot{text-align:center;color:var(--muted);font-size:12px;margin-top:24px}
+@media (max-width:680px){
+  .head{font-size:11px;min-height:52px}
+  .tile{font-size:22px;min-height:62px;padding:10px 4px}
+  .modal .q{font-size:22px}.modal .ans{font-size:19px}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Language Hub Jeopardy<span class="sub">Units 7-9 &middot; Mind &middot; Art &middot; Money</span></h1>
+</header>
+<div class="wrap">
+  <div class="scoreboard" id="scoreboard"></div>
+  <div class="controls">
+    <button class="btn small ghost" id="addTeam">+ Add team</button>
+    <button class="btn small ghost" id="delTeam">&minus; Remove team</button>
+    <button class="btn small ghost" id="resetBoard">Reset this board</button>
+    <button class="btn small ghost" id="resetScores">Reset scores</button>
+    <button class="btn small ghost" id="newGame">New game</button>
+  </div>
+  <div class="themebar" id="themebar"></div>
+  <div class="custombox" id="custombox">
+    <label>Background <input type="color" id="cBg"></label>
+    <label>Tiles <input type="color" id="cTile"></label>
+    <label>Accent <input type="color" id="cAccent"></label>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="board" id="board"></div>
+  <div class="foot">Progress and scores are saved in this browser. Click a tile to play it &middot; press <b>Esc</b> to close a clue.</div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div><span class="pts" id="mPts"></span><span class="tag" id="mTag"></span></div>
+    <div class="q" id="mQ"></div>
+    <div class="ans" id="mA"></div>
+    <div class="row">
+      <button class="reveal" id="mReveal">Reveal answer</button>
+      <span class="hint" style="margin:0">Award the points to the team that answered correctly.</span>
+    </div>
+    <div class="awards" id="mAwards"></div>
+  </div>
+</div>
+
+<script>
+const GAME_DATA = [{"number": 7, "title": "MIND", "emoji": "🧠", "categories": [{"name": "Feeling Words", "full": "Feeling Words", "meta": "vocabulary - Feelings (adjectives) - 7.1", "questions": [{"points": 100, "format": "definition->word", "prompt": "Which adjective means 'happy and positive'?", "answer": "cheerful"}, {"points": 200, "format": "gap-fill", "prompt": "Lola is a little _____ about the interview tomorrow.", "answer": "nervous (also accept: anxious)"}, {"points": 300, "format": "definition->word", "prompt": "Which adjective means 'calm and free from worry or tension'?", "answer": "relaxed"}, {"points": 400, "format": "multiple-choice", "prompt": "Which adjective means 'worried and uneasy about something that might happen in the future'? a) confused  b) anxious  c) pleased  d) tired", "answer": "b) anxious (also accept: anxious, b)"}, {"points": 500, "format": "odd-one-out", "prompt": "Which word does NOT mean 'happy'? glad, pleased, cheerful, confused", "answer": "confused"}]}, {"name": "Short & Sweet", "full": "Short & Sweet", "meta": "vocabulary - Shortened / abbreviated words - 7.2", "questions": [{"points": 100, "format": "word-from-clue", "prompt": "What is the short word for 'telephone'?", "answer": "phone"}, {"points": 200, "format": "gap-fill", "prompt": "Can you send me the _____ about the trip? I need the times and the price. (short word for 'information')", "answer": "info"}, {"points": 300, "format": "gap-fill", "prompt": "She's going to _____ next year to study. (short word for 'university')", "answer": "uni"}, {"points": 400, "format": "word-from-clue", "prompt": "What is the short word for 'aeroplane'?", "answer": "plane"}, {"points": 500, "format": "multiple-choice", "prompt": "Which short word means 'suitcase'? a) case  b) site  c) mic  d) net", "answer": "a) case (also accept: case, a)"}]}, {"name": "Net & Memory", "full": "Net & Memory", "meta": "vocabulary - Internet / memory and attention vocabulary - 7.2", "questions": [{"points": 100, "format": "definition->word", "prompt": "Which noun means 'the ability to remember things'?", "answer": "memory"}, {"points": 200, "format": "gap-fill", "prompt": "Be careful with that game. It's quite _____ and you can't stop playing it. (adjective: something that makes you want to keep doing it / hard to stop)", "answer": "addictive"}, {"points": 300, "format": "definition->word", "prompt": "Which adjective means 'not able to concentrate on something'?", "answer": "distracted"}, {"points": 400, "format": "word-from-clue", "prompt": "What two-word phrase means 'the length of time you can pay attention to one thing'?", "answer": "attention span"}, {"points": 500, "format": "definition->word", "prompt": "Which verb means 'to give all your attention to one thing and not be distracted'?", "answer": "concentrate"}]}, {"name": "Phrasal Verbs", "full": "Phrasal Verbs", "meta": "vocabulary - Phrasal verbs (about life and people) - 7.3", "questions": [{"points": 100, "format": "definition->word", "prompt": "Which phrasal verb means 'to stop doing something'?", "answer": "give up"}, {"points": 200, "format": "gap-fill", "prompt": "She grew _____ in a small town. (only the particle is needed)", "answer": "up"}, {"points": 300, "format": "definition->word", "prompt": "Which phrasal verb means 'to look after a child until they become an adult'?", "answer": "bring up"}, {"points": 400, "format": "gap-fill", "prompt": "He _____ _____ of university before he finished his degree. (left the course early)", "answer": "dropped out (also accept: drop out)"}, {"points": 500, "format": "multiple-choice", "prompt": "Which phrasal verb means 'to stop being friendly after a disagreement'? a) make up  b) fall out  c) bring up  d) grow up", "answer": "b) fall out (also accept: fall out, b)"}]}, {"name": "What's It Made Of?", "full": "What's It Made Of?", "meta": "vocabulary - Objects and materials (kitchen items) - 7.4", "questions": [{"points": 100, "format": "what do you use it for", "prompt": "It's made of wood. You use it to cut vegetables on. What is it?", "answer": "chopping board"}, {"points": 200, "format": "what do you use it for", "prompt": "It's made of plastic and glass. You use it to mix food and make smoothies. What is it?", "answer": "blender"}, {"points": 300, "format": "what do you use it for", "prompt": "It's made of metal. You use it to beat eggs or cream. What is it?", "answer": "whisk"}, {"points": 400, "format": "scrambled word", "prompt": "Unscramble this kitchen tool used to remove the skin from vegetables: P E E L R E", "answer": "peeler"}, {"points": 500, "format": "what do you use it for", "prompt": "It's a wooden tool. You use it to flatten pastry or dough. What is it?", "answer": "rolling pin"}]}, {"name": "Grammar Grid", "full": "Grammar Grid", "meta": "grammar - used to / didn't use to and Articles", "questions": [{"points": 100, "format": "gap-fill", "prompt": "When I was a child, I _____ _____ play football every weekend, but I don't play any more. (affirmative past habit)", "answer": "used to"}, {"points": 200, "format": "multiple-choice", "prompt": "Choose the correct sentence: a) I saw a interesting film last night.  b) I saw an interesting film last night.", "answer": "b) I saw an interesting film last night. (also accept: b, I saw an interesting film last night., an)"}, {"points": 300, "format": "correct-the-mistake", "prompt": "Correct the mistake: 'I didn't used to like chatting online.'", "answer": "I didn't use to like chatting online. (also accept: didn't use to)"}, {"points": 400, "format": "fill-the-gap", "prompt": "Choose a, an, the, or no article. Write your answer in words. 'At 11, he went to _____ university to study maths.'", "answer": "no article (zero article) (also accept: no article, zero article, -, (no article))"}, {"points": 500, "format": "correct-the-mistake", "prompt": "Correct the article mistake: 'It was actually hospital where his parents worked.'", "answer": "It was actually the hospital where his parents worked. (also accept: the hospital)"}]}]}, {"number": 8, "title": "ART", "emoji": "🎨", "categories": [{"name": "Sounds Good: Music Words", "full": "Sounds Good: Music Words", "meta": "vocabulary - Music vocabulary (8.1) & types of music", "questions": [{"points": 100, "format": "definition->word", "prompt": "What word means 'the words of a song'?", "answer": "lyrics"}, {"points": 200, "format": "definition->word", "prompt": "An informal word for a music concert, often in a club or pub. What is it?", "answer": "gig"}, {"points": 300, "format": "multiple-choice", "prompt": "Which adjective describes a song that is easy to remember and pleasant to listen to? a) live  b) catchy  c) classical  d) electric", "answer": "b) catchy (also accept: catchy, b)"}, {"points": 400, "format": "gap-fill", "prompt": "The band doesn't only play its own songs; it also plays _____ _____ written by other artists.", "answer": "cover songs"}, {"points": 500, "format": "odd-one-out", "prompt": "Which one is a TYPE of music, not a music-business word? a) album  b) tour  c) reggae  d) gig", "answer": "c) reggae (also accept: reggae, c)"}]}, {"name": "On the Wall: Types of Art", "full": "On the Wall: Types of Art", "meta": "vocabulary - Types of art (8.2)", "questions": [{"points": 100, "format": "definition->word", "prompt": "What do we call a painting, drawing or photograph of a person?", "answer": "portrait"}, {"points": 200, "format": "definition->word", "prompt": "A work of art made by shaping stone, metal or wood. What is it?", "answer": "sculpture"}, {"points": 300, "format": "word-from-clue", "prompt": "A painting that shows a view of the countryside or scenery is called a _____.", "answer": "landscape"}, {"points": 400, "format": "multiple-choice", "prompt": "A painting of objects that do not move, such as fruit or flowers, is called: a) abstract  b) still life  c) portrait  d) exhibition", "answer": "b) still life (also accept: still life, b)"}, {"points": 500, "format": "odd-one-out", "prompt": "Three of these relate to art; one is a PLACE where art is shown. Which is the place? a) abstract  b) gallery  c) sculpture  d) landscape", "answer": "b) gallery (also accept: gallery, b)"}]}, {"name": "Now Showing: Films & Books", "full": "Now Showing: Films & Books", "meta": "vocabulary - Film and book genres (8.3)", "questions": [{"points": 100, "format": "definition->word", "prompt": "What genre is a film or book that is funny and makes you laugh?", "answer": "comedy"}, {"points": 200, "format": "multiple-choice", "prompt": "A book in which a person writes the story of their OWN life is called: a) biography  b) biopic  c) autobiography  d) fantasy", "answer": "c) autobiography (also accept: autobiography, c)"}, {"points": 300, "format": "word-from-clue", "prompt": "A fast-paced, tense genre designed to keep you on the edge of your seat. One word, ends in -er. What genre is it?", "answer": "thriller"}, {"points": 400, "format": "definition->word", "prompt": "A film or TV programme set in the past, with historical clothes and settings. Two words. What is it?", "answer": "costume drama"}, {"points": 500, "format": "word-from-clue", "prompt": "What is the short form of 'science fiction'?", "answer": "sci-fi (also accept: sci fi)"}]}, {"name": "What Did You Think?", "full": "What Did You Think? Describing Films & Books", "meta": "vocabulary - Adjectives for describing films and books (8.3)", "questions": [{"points": 100, "format": "definition->word", "prompt": "Which adjective means 'not interesting'?", "answer": "boring"}, {"points": 200, "format": "definition->word", "prompt": "An adjective for a film or book that attracts and keeps your attention so much that you can't stop watching or reading. What is it?", "answer": "gripping"}, {"points": 300, "format": "gap-fill", "prompt": "The story made me cry. It was very _____. (= it made me feel strong, sad emotions)", "answer": "moving"}, {"points": 400, "format": "definition->word", "prompt": "Which adjective means 'easy to remember because of being special in some way'?", "answer": "memorable"}, {"points": 500, "format": "multiple-choice", "prompt": "Which adjective means 'not as good as you hoped'? a) engaging  b) memorable  c) disappointing  d) amazing", "answer": "c) disappointing (also accept: disappointing, c)"}]}, {"name": "Just for You: Reflexive Pronouns", "full": "Just for You: Reflexive Pronouns", "meta": "grammar - Reflexive pronouns", "questions": [{"points": 100, "format": "gap-fill", "prompt": "Complete the reflexive pronoun for 'they': them_____.", "answer": "themselves"}, {"points": 200, "format": "gap-fill", "prompt": "He did it alone, with no help. He did it by _____.", "answer": "himself"}, {"points": 300, "format": "gap-fill", "prompt": "You should look after _____ when you are tired. (you = one person)", "answer": "yourself"}, {"points": 400, "format": "correct-the-mistake", "prompt": "Correct the mistake: 'I taught to play the guitar last year.'", "answer": "I taught myself to play the guitar last year."}, {"points": 500, "format": "correct-the-mistake", "prompt": "Correct the mistake: 'Musical taste is a way for people to make theirselves different from others.'", "answer": "Musical taste is a way for people to make themselves different from others. (also accept: themselves)"}]}, {"name": "If You Like This...", "full": "If You Like This... (Grammar Mix)", "meta": "grammar - First conditional, infinitive of purpose & -ing/-ed adjectives", "questions": [{"points": 100, "format": "gap-fill", "prompt": "First conditional: 'If you like this musical, you _____ love it.' (will + verb)", "answer": "will (also accept: 'll, will)"}, {"points": 200, "format": "multiple-choice", "prompt": "Choose the correct -ed/-ing adjective: 'The ending was boring, so I felt _____.' a) boring  b) bored", "answer": "b) bored (also accept: bored, b)"}, {"points": 300, "format": "gap-fill", "prompt": "Infinitive of purpose: 'He uses brown tape _____ create his art.'", "answer": "to"}, {"points": 400, "format": "correct-the-mistake", "prompt": "Correct the first conditional: 'If you will like reggae, you will love this band.'", "answer": "If you like reggae, you will love this band."}, {"points": 500, "format": "correct-the-mistake", "prompt": "Correct the purpose clause: 'I use my laptop for watch films.'", "answer": "I use my laptop to watch films."}]}]}, {"number": 9, "title": "MONEY", "emoji": "💰", "categories": [{"name": "Money & Happiness", "full": "Money & Happiness", "meta": "vocabulary - Reading vocabulary: How to buy happiness (9.1)", "questions": [{"points": 100, "format": "definition->word", "prompt": "Which word means 'something that you own'?", "answer": "possession"}, {"points": 200, "format": "definition->word", "prompt": "Which adjective means 'considering something so important that you are always thinking about it'?", "answer": "obsessed"}, {"points": 300, "format": "definition->word", "prompt": "Which verb means 'to give someone the enthusiasm to do something'?", "answer": "inspire"}, {"points": 400, "format": "word-from-clue", "prompt": "This noun phrase names the good feeling you get when you succeed at something.", "answer": "sense of achievement (also accept: a sense of achievement, feeling of achievement, sense of accomplishment, achievement)"}, {"points": 500, "format": "multiple-choice", "prompt": "Which word means 'the belief that money and possessions are the most important aspects of human existence'? a) materialism  b) experiences  c) inspiration  d) budget", "answer": "a) materialism (also accept: materialism, a)"}]}, {"name": "Money Phrases & Prepositions", "full": "Money Phrases & Prepositions", "meta": "vocabulary - Prepositions in money phrases (9.1)", "questions": [{"points": 100, "format": "gap-fill", "prompt": "For things under five euros, I generally pay _____ cash.", "answer": "in (also accept: with)"}, {"points": 200, "format": "gap-fill", "prompt": "I usually pay for things over five euros _____ card.", "answer": "by"}, {"points": 300, "format": "gap-fill", "prompt": "I spend a lot of my money _____ travelling.", "answer": "on"}, {"points": 400, "format": "definition->word (phrasal verb)", "prompt": "Which phrasal verb means 'to keep money over time so you can buy or do something later'?", "answer": "save up (for) (also accept: save up, save up for)"}, {"points": 500, "format": "correct-the-mistake", "prompt": "Correct the preposition: 'I occasionally borrow money to my friends, and I lend it from them too.'", "answer": "I occasionally borrow money from my friends, and I lend it to them too."}]}, {"name": "Verbs of Money", "full": "Verbs of Money", "meta": "vocabulary - Verbs connected with money (9.2)", "questions": [{"points": 100, "format": "definition->word", "prompt": "Which verb means 'to get money by working'?", "answer": "earn"}, {"points": 200, "format": "gap-fill", "prompt": "Have you ever _____ money to a charity? (verb meaning to give money to those who need help)", "answer": "donated (also accept: donate)"}, {"points": 300, "format": "definition->word", "prompt": "Which verb means 'to need to pay money back to someone'?", "answer": "owe"}, {"points": 400, "format": "definition->word", "prompt": "Which verb means 'to give money or help to a person, organisation or cause'?", "answer": "support"}, {"points": 500, "format": "odd-one-out", "prompt": "Three of these verbs mean parting with money; one means getting/collecting money. Which is the odd one out: donate, give away, support, raise?", "answer": "raise"}]}, {"name": "Bartering & Make/Do", "full": "Bartering & Make/Do", "meta": "vocabulary - Bartering vocabulary and make/do expressions (9.3)", "questions": [{"points": 100, "format": "make-or-do", "prompt": "make or do? '_____ your shopping, cleaning or ironing.'", "answer": "do"}, {"points": 200, "format": "definition->word (verb)", "prompt": "Which verb means 'to exchange goods or services for other goods or services instead of using money'?", "answer": "barter"}, {"points": 300, "format": "make-or-do", "prompt": "make or do? It's important not to try to _____ a profit when you barter.", "answer": "make"}, {"points": 400, "format": "definition->word (adjective)", "prompt": "Which formal adjective means 'real and able to be touched', often contrasted with experiences (for example, a sofa or a bike)?", "answer": "tangible"}, {"points": 500, "format": "correct-the-mistake", "prompt": "Correct the collocation error: 'If someone makes you a favour, you should do them an offer of fair value.'", "answer": "If someone does you a favour, you should make them an offer of fair value."}]}, {"name": "Shopping for Clothes", "full": "Shopping for Clothes", "meta": "vocabulary - Clothes shopping items and functional language (9.4)", "questions": [{"points": 100, "format": "definition->word", "prompt": "What do we call trousers made of denim?", "answer": "jeans"}, {"points": 200, "format": "definition->word", "prompt": "Which item is 'a piece of cloth worn around the neck'?", "answer": "scarf"}, {"points": 300, "format": "definition->word", "prompt": "What is the piece of paper called that proves you bought something and that you may need to show in order to return it?", "answer": "receipt"}, {"points": 400, "format": "functional-language gap-fill", "prompt": "A customer wants their money back. Complete what they say: 'I'd like a _____, please.'", "answer": "refund"}, {"points": 500, "format": "functional-language gap-fill", "prompt": "A customer is buying a present. Complete the shop assistant's offer so the item looks like a gift: 'Would you like me to _____ it for you?'", "answer": "gift wrap (also accept: gift-wrap)"}]}, {"name": "Grammar Gauntlet", "full": "Grammar Gauntlet", "meta": "grammar - Second conditional, defining relative clauses and gerunds", "questions": [{"points": 100, "format": "multiple-choice", "prompt": "Choose the relative pronoun for people: 'There are many celebrities _____ have given money to charity.' a) which  b) who  c) whose  d) what", "answer": "b) who (also accept: who, b)"}, {"points": 200, "format": "gap-fill (gerund)", "prompt": "Use the gerund: 'He dreamt of _____ (own) his own house.'", "answer": "owning"}, {"points": 300, "format": "gap-fill (second conditional)", "prompt": "Complete with the second conditional: 'If I _____ (find) a 100 euro note in the street, I'd take it to the police.'", "answer": "found"}, {"points": 400, "format": "correct-the-mistake", "prompt": "Correct the second conditional: 'If we spent more on experiences, we will gain something that lasts.'", "answer": "If we spent more on experiences, we would gain something that lasts."}, {"points": 500, "format": "correct-the-mistake", "prompt": "One relative pronoun is wrong. Fix it: 'She has a charity what focuses on the environment.'", "answer": "She has a charity that focuses on the environment. (also accept: She has a charity which focuses on the environment.)"}]}]}];
+const LS = "jeopardy-langhub-v1";
+
+const DEFAULT_CUSTOM = {bg:"#0a0f2c", tile:"#0b1ea0", accent:"#ffcc00"};
+let state = load();
+function load(){
+  try{ const s = JSON.parse(localStorage.getItem(LS)); if(s && s.teams){
+    if(!s.theme) s.theme="classic";
+    if(!s.custom) s.custom={...DEFAULT_CUSTOM};
+    return s;
+  } }catch(e){}
+  return { teams:[{name:"Team 1",score:0},{name:"Team 2",score:0}], unit:0, played:[],
+           theme:"classic", custom:{...DEFAULT_CUSTOM} };
+}
+function save(){ localStorage.setItem(LS, JSON.stringify(state)); }
+function key(u,c,p){ return u+":"+c+":"+p; }
+const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+function fmtPrompt(s){
+  // put each multiple-choice option (a) b) c) d)) on its own line
+  return esc(s).replace(/\s+([a-d]\))\s+/g, "<br>$1&nbsp;");
+}
+
+/* ---- themes ---- */
+const THEMES = {
+  classic:   {label:"Classic",   bg:"#0a0f2c", panel:"#10184a", tile:"#0b1ea0", "tile-hi":"#1631d6", gold:"#ffcc00", ink:"#ffffff", muted:"#9fb0ff", done:"#1a2150", good:"#15c26b", bad:"#ff5d6c", line:"#2a3a8f", "accent-ink":"#10184a", cat:"#ffcc00"},
+  midnight:  {label:"Midnight",  bg:"#0c1117", panel:"#161d26", tile:"#0f5562", "tile-hi":"#157285", gold:"#ffd166", ink:"#eef6f6", muted:"#8aa6ad", done:"#19222b", good:"#2dd4a7", bad:"#ff6b81", line:"#27343d", "accent-ink":"#06232a", cat:"#ffd166"},
+  sunset:    {label:"Sunset",    bg:"#2a1240", panel:"#3a1a57", tile:"#7a2d8f", "tile-hi":"#9b3bb3", gold:"#ffb24d", ink:"#fff0fb", muted:"#d9a9e8", done:"#341a4a", good:"#46d39a", bad:"#ff6b81", line:"#5a2d72", "accent-ink":"#3a1020", cat:"#ffb24d"},
+  forest:    {label:"Forest",    bg:"#0c1f16", panel:"#123026", tile:"#1f6b43", "tile-hi":"#2a8a57", gold:"#ffd54a", ink:"#eafff3", muted:"#8fc4a8", done:"#15281f", good:"#38d68a", bad:"#ff6b81", line:"#245238", "accent-ink":"#0c2417", cat:"#ffd54a"},
+  bubblegum: {label:"Bubblegum", bg:"#2a1030", panel:"#3d1647", tile:"#e84393", "tile-hi":"#ff5fa8", gold:"#ffe14d", ink:"#fff2fa", muted:"#f0b6d6", done:"#341540", good:"#2bd4c4", bad:"#ff5d6c", line:"#5a2160", "accent-ink":"#3d0b2a", cat:"#ffe14d"},
+  light:     {label:"Classroom Light", bg:"#eef2fb", panel:"#ffffff", tile:"#1d35c4", "tile-hi":"#2845e0", gold:"#ffcf33", ink:"#14203f", muted:"#5b6b94", done:"#d4dbf0", good:"#0fa35b", bad:"#d63852", line:"#c5cfeb", "accent-ink":"#14203f", cat:"#16235a"},
+};
+const THEME_ORDER = ["classic","midnight","sunset","forest","bubblegum","light"];
+
+const hx = c => { c=c.replace("#",""); if(c.length===3) c=c.split("").map(x=>x+x).join(""); return [0,2,4].map(i=>parseInt(c.slice(i,i+2),16)); };
+const toHex = a => "#"+a.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,"0")).join("");
+const mix = (a,b,t)=>{const A=hx(a),B=hx(b);return toHex(A.map((v,i)=>v+(B[i]-v)*t));};
+const lighten=(c,t)=>mix(c,"#ffffff",t), darken=(c,t)=>mix(c,"#000000",t);
+const lum = c => { const a=hx(c).map(v=>{v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);}); return 0.2126*a[0]+0.7152*a[1]+0.0722*a[2]; };
+const isLight = c => lum(c)>0.45;
+const contrast = c => isLight(c) ? "#10203f" : "#ffffff";
+
+function deriveCustom(cu){
+  const bg=cu.bg, tile=cu.tile, accent=cu.accent, dark=!isLight(bg);
+  const panel = dark ? lighten(bg,0.07) : darken(bg,0.05);
+  return {
+    bg, panel, tile, "tile-hi": lighten(tile,0.12), gold: accent,
+    ink: contrast(bg), muted: mix(contrast(bg), bg, 0.45),
+    done: dark ? lighten(bg,0.11) : darken(bg,0.10),
+    good:"#15c26b", bad:"#ff5d6c",
+    line: dark ? lighten(bg,0.18) : darken(bg,0.15),
+    "accent-ink": contrast(accent),
+    cat: isLight(panel) ? darken(accent,0.4) : accent,
+  };
+}
+function applyTheme(){
+  const vars = state.theme==="custom" ? deriveCustom(state.custom) : (THEMES[state.theme]||THEMES.classic);
+  const root = document.documentElement.style;
+  for(const k in vars){ if(k!=="label") root.setProperty("--"+k, vars[k]); }
+}
+function renderThemes(){
+  const bar=document.getElementById("themebar"); bar.innerHTML="";
+  const lbl=document.createElement("span"); lbl.className="lbl"; lbl.textContent="Theme"; bar.appendChild(lbl);
+  THEME_ORDER.forEach(name=>{
+    const t=THEMES[name];
+    const b=document.createElement("button");
+    b.className="swatch"+(state.theme===name?" active":"");
+    b.title=t.label; b.style.background=t.tile;
+    b.innerHTML='<i style="background:'+t.gold+'"></i>';
+    b.onclick=()=>{ state.theme=name; save(); applyTheme(); renderThemes(); };
+    bar.appendChild(b);
+  });
+  const cb=document.createElement("button");
+  cb.className="swatch custom"+(state.theme==="custom"?" active":"");
+  cb.title="Custom colours"; cb.textContent="🎨";
+  cb.onclick=()=>{ state.theme="custom"; save(); syncCustomInputs(); applyTheme(); renderThemes(); updateCustomBox(); };
+  bar.appendChild(cb);
+  updateCustomBox();
+}
+function updateCustomBox(){
+  document.getElementById("custombox").classList.toggle("show", state.theme==="custom");
+}
+function syncCustomInputs(){
+  document.getElementById("cBg").value=state.custom.bg;
+  document.getElementById("cTile").value=state.custom.tile;
+  document.getElementById("cAccent").value=state.custom.accent;
+}
+function wireCustom(){
+  const map={cBg:"bg", cTile:"tile", cAccent:"accent"};
+  Object.keys(map).forEach(id=>{
+    document.getElementById(id).addEventListener("input", e=>{
+      state.custom[map[id]] = e.target.value;
+      state.theme="custom"; save(); applyTheme(); renderThemes();
+    });
+  });
+  syncCustomInputs();
+}
+
+/* ---- scoreboard ---- */
+function renderTeams(){
+  const sb = document.getElementById("scoreboard"); sb.innerHTML="";
+  const max = Math.max(0, ...state.teams.map(t=>t.score));
+  state.teams.forEach((t,i)=>{
+    const lead = t.score>0 && t.score===max;
+    const el = document.createElement("div");
+    el.className = "team"+(lead?" lead":"");
+    el.innerHTML =
+      '<input class="name" value="'+esc(t.name).replace(/"/g,'&quot;')+'" data-i="'+i+'">'+
+      '<div class="score">'+t.score+'</div>'+
+      '<div class="pm"><button class="btn small" data-pm="-1" data-i="'+i+'">&minus;</button>'+
+      '<button class="btn small" data-pm="1" data-i="'+i+'">+</button></div>';
+    sb.appendChild(el);
+  });
+  sb.querySelectorAll("input.name").forEach(inp=>inp.addEventListener("input",e=>{
+    state.teams[+e.target.dataset.i].name = e.target.value; save();
+  }));
+  sb.querySelectorAll("button[data-pm]").forEach(b=>b.addEventListener("click",e=>{
+    const i=+e.target.dataset.i; const step=(+e.target.dataset.pm)*100;
+    state.teams[i].score += step; save(); renderTeams();
+  }));
+}
+
+/* ---- tabs ---- */
+function renderTabs(){
+  const t = document.getElementById("tabs"); t.innerHTML="";
+  GAME_DATA.forEach((u,i)=>{
+    const b=document.createElement("button");
+    b.className="tab"+(i===state.unit?" active":"");
+    b.innerHTML=(u.emoji?u.emoji+" ":"")+"Unit "+u.number+" &middot; "+u.title;
+    b.onclick=()=>{ state.unit=i; save(); renderTabs(); renderBoard(); };
+    t.appendChild(b);
+  });
+}
+
+/* ---- board ---- */
+function renderBoard(){
+  const u = GAME_DATA[state.unit];
+  const board = document.getElementById("board");
+  board.style.gridTemplateColumns = "repeat("+u.categories.length+",1fr)";
+  board.innerHTML="";
+  u.categories.forEach(c=>{
+    const h=document.createElement("div");
+    h.className="cell head"; h.textContent=c.name; board.appendChild(h);
+  });
+  const tiers=[100,200,300,400,500];
+  tiers.forEach(p=>{
+    u.categories.forEach((c,ci)=>{
+      const done = state.played.includes(key(state.unit,ci,p));
+      const cell=document.createElement("div");
+      cell.className="cell tile"+(done?" done":"");
+      cell.textContent = done ? "✓" : p;
+      if(!done) cell.onclick=()=>openTile(ci,p);
+      board.appendChild(cell);
+    });
+  });
+}
+
+/* ---- modal ---- */
+let current=null;
+function openTile(ci,p){
+  const u=GAME_DATA[state.unit];
+  const c=u.categories[ci];
+  const q=c.questions.find(x=>x.points===p);
+  current={ci,p,q};
+  document.getElementById("mTag").textContent = c.name+"  ·  "+q.format;
+  document.getElementById("mPts").textContent = p;
+  document.getElementById("mQ").innerHTML = fmtPrompt(q.prompt);
+  const a=document.getElementById("mA");
+  const parts = q.answer.match(/^(.*?)(\s*\(also accept:.*\))?$/s);
+  let main=q.answer, extra="";
+  const idx=q.answer.indexOf("(also accept:");
+  if(idx>=0){ main=q.answer.slice(0,idx).trim(); extra=q.answer.slice(idx).trim(); }
+  a.innerHTML = esc(main)+(extra?'<small>'+esc(extra)+'</small>':'');
+  a.classList.remove("show");
+  document.getElementById("mReveal").style.display="";
+  buildAwards();
+  document.getElementById("overlay").classList.add("show");
+}
+function buildAwards(){
+  const aw=document.getElementById("mAwards"); aw.innerHTML="";
+  state.teams.forEach((t,i)=>{
+    const b=document.createElement("button");
+    b.className="btn good"; b.textContent=t.name+"  +"+current.p;
+    b.onclick=()=>award(i); aw.appendChild(b);
+  });
+  const nb=document.createElement("button");
+  nb.className="btn none"; nb.textContent="No one — mark done";
+  nb.onclick=()=>markDone(); aw.appendChild(nb);
+}
+function reveal(){
+  document.getElementById("mA").classList.add("show");
+  document.getElementById("mReveal").style.display="none";
+}
+function award(i){
+  state.teams[i].score += current.p;
+  markDone();
+  renderTeams();
+}
+function markDone(){
+  if(current){ const k=key(state.unit,current.ci,current.p);
+    if(!state.played.includes(k)) state.played.push(k); }
+  save(); closeModal(); renderBoard();
+}
+function closeModal(){ document.getElementById("overlay").classList.remove("show"); current=null; }
+
+document.getElementById("mReveal").onclick=reveal;
+document.getElementById("overlay").addEventListener("click",e=>{
+  if(e.target.id==="overlay") closeModal();
+});
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeModal(); });
+
+/* ---- controls ---- */
+document.getElementById("addTeam").onclick=()=>{
+  if(state.teams.length<6){ state.teams.push({name:"Team "+(state.teams.length+1),score:0}); save(); renderTeams(); }
+};
+document.getElementById("delTeam").onclick=()=>{
+  if(state.teams.length>2){ state.teams.pop(); save(); renderTeams(); }
+};
+document.getElementById("resetBoard").onclick=()=>{
+  const pre=state.unit+":";
+  state.played=state.played.filter(k=>!k.startsWith(pre)); save(); renderBoard();
+};
+document.getElementById("resetScores").onclick=()=>{
+  state.teams.forEach(t=>t.score=0); save(); renderTeams();
+};
+document.getElementById("newGame").onclick=()=>{
+  if(confirm("Start a new game? This clears all scores and played tiles.")){
+    state={teams:[{name:"Team 1",score:0},{name:"Team 2",score:0}],unit:state.unit,played:[]};
+    save(); renderTeams(); renderBoard();
+  }
+};
+
+applyTheme(); wireCustom(); renderThemes(); renderTeams(); renderTabs(); renderBoard();
+</script>
+</body>
+</html>
