@@ -26,9 +26,18 @@ h1 .sub{display:block;font-size:13px;color:var(--muted);font-weight:400;margin-t
 .scoreboard{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:12px 0}
 .team{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 10px;min-width:140px;text-align:center}
 .team input.name{background:transparent;border:none;color:var(--cat);font-weight:700;font-size:15px;text-align:center;width:100%;outline:none}
-.team .score{font-size:30px;font-weight:800;margin:2px 0}
+.team .stats{display:flex;gap:12px;justify-content:center;margin:4px 0 2px}
+.team .stat{text-align:center;min-width:52px}
+.team .stat .lab{font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.team .stat .val{font-size:25px;font-weight:800;line-height:1.05}
+.team .stat.credit .val{color:var(--gold)}
 .team.lead{box-shadow:0 0 0 2px var(--gold) inset}
-.team .pm{display:flex;gap:6px;justify-content:center}
+.team .pm{display:flex;gap:6px;justify-content:center;margin-top:2px}
+.team .pm button{flex:1}
+.team .cookies{font-size:13px;margin:4px 0 2px;min-height:17px}
+.team .cookie-btn{width:100%;margin-top:2px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn:disabled:hover{background:var(--tile)}
 .btn{background:var(--tile);color:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:14px;cursor:pointer;font-weight:600}
 .btn:hover{background:var(--tile-hi)}
 .btn.ghost{background:transparent;color:var(--ink)}
@@ -139,9 +148,10 @@ function load(){
   try{ const s = JSON.parse(localStorage.getItem(LS)); if(s && s.teams){
     if(!s.theme) s.theme="classic";
     if(!s.custom) s.custom={...DEFAULT_CUSTOM};
+    s.teams.forEach(t=>{ if(typeof t.credit!=="number") t.credit=t.score||0; if(typeof t.cookies!=="number") t.cookies=0; });
     return s;
   } }catch(e){}
-  return { teams:[{name:"Team 1",score:0},{name:"Team 2",score:0}], unit:0, played:[],
+  return { teams:[{name:"Team 1",score:0,credit:0,cookies:0},{name:"Team 2",score:0,credit:0,cookies:0}], unit:0, played:[],
            theme:"classic", custom:{...DEFAULT_CUSTOM} };
 }
 function save(){ localStorage.setItem(LS, JSON.stringify(state)); }
@@ -237,9 +247,14 @@ function renderTeams(){
     el.className = "team"+(lead?" lead":"");
     el.innerHTML =
       '<input class="name" value="'+esc(t.name).replace(/"/g,'&quot;')+'" data-i="'+i+'">'+
-      '<div class="score">'+t.score+'</div>'+
+      '<div class="stats">'+
+        '<div class="stat"><div class="lab">Score</div><div class="val">'+t.score+'</div></div>'+
+        '<div class="stat credit"><div class="lab">Credit</div><div class="val">'+t.credit+'</div></div>'+
+      '</div>'+
       '<div class="pm"><button class="btn small" data-pm="-1" data-i="'+i+'">&minus;</button>'+
-      '<button class="btn small" data-pm="1" data-i="'+i+'">+</button></div>';
+      '<button class="btn small" data-pm="1" data-i="'+i+'">+</button></div>'+
+      '<div class="cookies">'+(t.cookies>0 ? "🍪 ×"+t.cookies : "&nbsp;")+'</div>'+
+      '<button class="btn small cookie-btn" data-cookie="'+i+'"'+(t.credit<1800?" disabled":"")+'>🍪 Buy cookie (1800)</button>';
     sb.appendChild(el);
   });
   sb.querySelectorAll("input.name").forEach(inp=>inp.addEventListener("input",e=>{
@@ -247,7 +262,12 @@ function renderTeams(){
   }));
   sb.querySelectorAll("button[data-pm]").forEach(b=>b.addEventListener("click",e=>{
     const i=+e.target.dataset.i; const step=(+e.target.dataset.pm)*100;
-    state.teams[i].score += step; save(); renderTeams();
+    state.teams[i].score += step; state.teams[i].credit += step; save(); renderTeams();
+  }));
+  sb.querySelectorAll("button[data-cookie]").forEach(b=>b.addEventListener("click",e=>{
+    const i=+e.currentTarget.dataset.cookie; const t=state.teams[i];
+    if(t.credit < 1800) return;            // not enough credit — blocked
+    t.credit -= 1800; t.cookies=(t.cookies||0)+1; save(); renderTeams();
   }));
 }
 
@@ -324,6 +344,7 @@ function reveal(){
 }
 function award(i){
   state.teams[i].score += current.p;
+  state.teams[i].credit += current.p;   // credit mirrors score on a win
   markDone();
   renderTeams();
 }
@@ -342,7 +363,7 @@ document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeModal(); });
 
 /* ---- controls ---- */
 document.getElementById("addTeam").onclick=()=>{
-  if(state.teams.length<6){ state.teams.push({name:"Team "+(state.teams.length+1),score:0}); save(); renderTeams(); }
+  if(state.teams.length<6){ state.teams.push({name:"Team "+(state.teams.length+1),score:0,credit:0,cookies:0}); save(); renderTeams(); }
 };
 document.getElementById("delTeam").onclick=()=>{
   if(state.teams.length>2){ state.teams.pop(); save(); renderTeams(); }
@@ -352,11 +373,11 @@ document.getElementById("resetBoard").onclick=()=>{
   state.played=state.played.filter(k=>!k.startsWith(pre)); save(); renderBoard();
 };
 document.getElementById("resetScores").onclick=()=>{
-  state.teams.forEach(t=>t.score=0); save(); renderTeams();
+  state.teams.forEach(t=>{t.score=0;t.credit=0;t.cookies=0;}); save(); renderTeams();
 };
 document.getElementById("newGame").onclick=()=>{
-  if(confirm("Start a new game? This clears all scores and played tiles.")){
-    state={teams:[{name:"Team 1",score:0},{name:"Team 2",score:0}],unit:state.unit,played:[]};
+  if(confirm("Start a new game? This clears all scores, credit, cookies and played tiles.")){
+    state={teams:[{name:"Team 1",score:0,credit:0,cookies:0},{name:"Team 2",score:0,credit:0,cookies:0}],unit:state.unit,played:[],theme:state.theme,custom:state.custom};
     save(); renderTeams(); renderBoard();
   }
 };
