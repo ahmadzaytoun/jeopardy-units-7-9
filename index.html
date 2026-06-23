@@ -26,14 +26,14 @@ h1 .sub{display:block;font-size:13px;color:var(--muted);font-weight:400;margin-t
 .scoreboard{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:12px 0}
 .team{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 10px;min-width:140px;text-align:center}
 .team input.name{background:transparent;border:none;color:var(--cat);font-weight:700;font-size:15px;text-align:center;width:100%;outline:none}
-.team .stats{display:flex;gap:12px;justify-content:center;margin:4px 0 2px}
-.team .stat{text-align:center;min-width:52px}
+.team .stats{display:flex;gap:14px;justify-content:center;margin:4px 0 2px}
+.team .stat{text-align:center;min-width:60px}
 .team .stat .lab{font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
-.team .stat .val{font-size:25px;font-weight:800;line-height:1.05}
+.team .stat .val{font-size:24px;font-weight:800;line-height:1.05}
 .team .stat.credit .val{color:var(--gold)}
+.team .stat .pm{display:flex;gap:4px;justify-content:center;margin-top:3px}
+.btn.mini{padding:1px 8px;font-size:12px;font-weight:700}
 .team.lead{box-shadow:0 0 0 2px var(--gold) inset}
-.team .pm{display:flex;gap:6px;justify-content:center;margin-top:2px}
-.team .pm button{flex:1}
 .team .cookies{font-size:13px;margin:4px 0 2px;min-height:17px}
 .team .cookie-btn{width:100%;margin-top:2px}
 .btn:disabled{opacity:.4;cursor:not-allowed}
@@ -248,11 +248,13 @@ function renderTeams(){
     el.innerHTML =
       '<input class="name" value="'+esc(t.name).replace(/"/g,'&quot;')+'" data-i="'+i+'">'+
       '<div class="stats">'+
-        '<div class="stat"><div class="lab">Score</div><div class="val">'+t.score+'</div></div>'+
-        '<div class="stat credit"><div class="lab">Credit</div><div class="val">'+t.credit+'</div></div>'+
+        '<div class="stat"><div class="lab">Score</div><div class="val">'+t.score+'</div>'+
+          '<div class="pm"><button class="btn mini" data-pm="-1" data-i="'+i+'" title="-100 score and credit">&minus;</button>'+
+          '<button class="btn mini" data-pm="1" data-i="'+i+'" title="+100 score and credit">+</button></div></div>'+
+        '<div class="stat credit"><div class="lab">Credit</div><div class="val">'+t.credit+'</div>'+
+          '<div class="pm"><button class="btn mini" data-cpm="-1" data-i="'+i+'" title="-100 credit only">&minus;</button>'+
+          '<button class="btn mini" data-cpm="1" data-i="'+i+'" title="+100 credit only">+</button></div></div>'+
       '</div>'+
-      '<div class="pm"><button class="btn small" data-pm="-1" data-i="'+i+'">&minus;</button>'+
-      '<button class="btn small" data-pm="1" data-i="'+i+'">+</button></div>'+
       '<div class="cookies">'+(t.cookies>0 ? "🍪 ×"+t.cookies : "&nbsp;")+'</div>'+
       '<button class="btn small cookie-btn" data-cookie="'+i+'"'+(t.credit<1800?" disabled":"")+'>🍪 Buy cookie (1800)</button>';
     sb.appendChild(el);
@@ -261,8 +263,12 @@ function renderTeams(){
     state.teams[+e.target.dataset.i].name = e.target.value; save();
   }));
   sb.querySelectorAll("button[data-pm]").forEach(b=>b.addEventListener("click",e=>{
-    const i=+e.target.dataset.i; const step=(+e.target.dataset.pm)*100;
+    const i=+e.currentTarget.dataset.i; const step=(+e.currentTarget.dataset.pm)*100;
     state.teams[i].score += step; state.teams[i].credit += step; save(); renderTeams();
+  }));
+  sb.querySelectorAll("button[data-cpm]").forEach(b=>b.addEventListener("click",e=>{
+    const i=+e.currentTarget.dataset.i;                       // credit-only adjustment
+    state.teams[i].credit += (+e.currentTarget.dataset.cpm)*100; save(); renderTeams();
   }));
   sb.querySelectorAll("button[data-cookie]").forEach(b=>b.addEventListener("click",e=>{
     const i=+e.currentTarget.dataset.cookie; const t=state.teams[i];
